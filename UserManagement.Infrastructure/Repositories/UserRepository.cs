@@ -54,9 +54,14 @@ namespace UserManagement.Infrastructure.Repositories
             throw new NotImplementedException();
         }
 
-        public Task<IEnumerable<User>> GetAllUsersAsync()
+        public Task<List<User>> GetAllUsersAsync()
         {
-            throw new NotImplementedException();
+            return _context.Users
+                           .Include(u => u.Role)
+                           .Include(u => u.Permissions)
+                               .ThenInclude(up => up.Permission)
+                           .Where(u => u.DateDelete == null)
+                           .ToListAsync();
         }
 
         public Task<Role> GetRoleByIdAsync(Guid roleId)
@@ -66,7 +71,11 @@ namespace UserManagement.Infrastructure.Repositories
 
         public Task<User> GetUserByIdAsync(Guid userId)
         {
-            throw new NotImplementedException();
+            return _context.Users
+                           .Include(u => u.Role)
+                           .Include(u => u.Permissions)
+                               .ThenInclude(up => up.Permission)
+                           .FirstOrDefaultAsync(u => u.UserId == userId && u.DateDelete == null);
         }
 
         public Task UpdateUserAsync(User user)
@@ -95,7 +104,7 @@ namespace UserManagement.Infrastructure.Repositories
             return newRole;
         }
 
-        public Task<IEnumerable<Role>> GetAllRolesAsync()
+        public Task<List<Role>> GetAllRolesAsync()
         {
             throw new NotImplementedException();
         }
@@ -135,7 +144,7 @@ namespace UserManagement.Infrastructure.Repositories
             throw new NotImplementedException();
         }
 
-        public Task<IEnumerable<Permission>> GetAllPermissionsAsync()
+        public Task<List<Permission>> GetAllPermissionsAsync()
         {
             throw new NotImplementedException();
         }
