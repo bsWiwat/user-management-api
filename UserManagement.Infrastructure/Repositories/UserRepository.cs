@@ -72,11 +72,6 @@ namespace UserManagement.Infrastructure.Repositories
                            .ToListAsync();
         }
 
-        public Task<Role> GetRoleByIdAsync(Guid roleId)
-        {
-            throw new NotImplementedException();
-        }
-
         public Task<User> GetUserByIdAsync(Guid userId)
         {
             return _context.Users
@@ -144,7 +139,12 @@ namespace UserManagement.Infrastructure.Repositories
 
         public Task<List<Role>> GetAllRolesAsync()
         {
-            throw new NotImplementedException();
+            return _context.Roles.ToListAsync();
+        }
+
+        public Task<Role> GetRoleByIdAsync(Guid roleId)
+        {
+            return _context.Roles.FirstOrDefaultAsync(r => r.RoleId == roleId);
         }
 
         public Task UpdateRoleAsync(Role role)
@@ -179,12 +179,12 @@ namespace UserManagement.Infrastructure.Repositories
 
         public Task<Permission> GetPermissionByIdAsync(Guid permissionId)
         {
-            throw new NotImplementedException();
+            return _context.Permissions.FirstOrDefaultAsync(p => p.PermissionId == permissionId);
         }
 
         public Task<List<Permission>> GetAllPermissionsAsync()
         {
-            throw new NotImplementedException();
+            return _context.Permissions.ToListAsync();
         }
 
         public Task UpdatePermissionAsync(Permission permission)
