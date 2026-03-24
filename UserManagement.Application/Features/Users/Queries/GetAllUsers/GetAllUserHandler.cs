@@ -41,7 +41,10 @@ public class GetAllUserHandler : IRequestHandler<GetAllUserQuery, BaseResponse<L
                 {
                     PermissionId = p.PermissionId,
                     PermissionName = p.Permission.PermissionName,
-                }).ToList()
+                }).ToList(),
+                DateCreate = user.DateCreate,
+                DateUpdate = user.DateUpdate,
+                DateDelete = user.DateDelete
             }).ToList()
         };
     }

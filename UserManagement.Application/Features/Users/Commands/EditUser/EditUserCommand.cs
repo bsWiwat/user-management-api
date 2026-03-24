@@ -2,10 +2,11 @@ using MediatR;
 using UserManagement.Application.Common.Responses;
 using UserManagement.Application.Models;
 
-namespace UserManagement.Application.Features.Users.Commands.CreateUser;
+namespace UserManagement.Application.Features.Users.Commands.EditUser;
 
-public class CreateUserCommand : IRequest<BaseResponse<UserResponseDTO>>
+public class EditUserCommand : IRequest<BaseResponse<UserResponseDTO>>
 {
+    public Guid UserId { get; set; }
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;

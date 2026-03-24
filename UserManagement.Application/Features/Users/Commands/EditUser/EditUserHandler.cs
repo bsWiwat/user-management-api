@@ -1,18 +1,19 @@
 using MediatR;
 using UserManagement.Application.Common.Responses;
 using UserManagement.Application.Contracts.Repository;
+using UserManagement.Application.Models;
 
-namespace UserManagement.Application.Features.Users.Queries.GetUserById;
+namespace UserManagement.Application.Features.Users.Commands.EditUser;
 
-public class GetUserByIdHandler : IRequestHandler<GetUserByIdQuery, BaseResponse<UserResponseDTO>>
+public class EditUserHandler : IRequestHandler<EditUserCommand, BaseResponse<UserResponseDTO>>
 {
     private readonly IUserRepository _userRepository;
-    public GetUserByIdHandler(IUserRepository userRepository)
+    public EditUserHandler(IUserRepository userRepository)
     {
         _userRepository = userRepository;
     }
 
-    public async Task<BaseResponse<UserResponseDTO>> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
+    public async Task<BaseResponse<UserResponseDTO>> Handle(EditUserCommand request, CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetUserByIdAsync(request.UserId);
 
@@ -29,12 +30,36 @@ public class GetUserByIdHandler : IRequestHandler<GetUserByIdQuery, BaseResponse
             };
         }
 
+        var now = DateTime.UtcNow;
+        var userUpdate = new CreateUserDto
+        {
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            Email = request.Email,
+            Phone = request.Phone,
+            RoleId = request.RoleId,
+            Username = request.Username,
+            Password = request.Password,
+            Permissions = request.Permissions.Select(p => new CreateUserPermissionDto
+            {
+                PermissionId = p.PermissionId,
+                IsReadable = p.IsReadable,
+                IsWritable = p.IsWritable,
+                IsDeletable = p.IsDeletable
+            }).ToList(),
+
+            DateUpdate = now
+        };
+
+
+        await _userRepository.UpdateUserAsync(request.UserId, userUpdate);
+
         return new BaseResponse<UserResponseDTO>
         {
             Status = new StatusResponse
             {
                 Code = "200",
-                Description = "User retrieved successfully"
+                Description = "User updated successfully"
             },
             Data = new UserResponseDTO
             {

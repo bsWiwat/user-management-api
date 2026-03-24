@@ -49,9 +49,17 @@ namespace UserManagement.Infrastructure.Repositories
                                 .FirstAsync(u => u.UserId == newUser.UserId);
         }
 
-        public Task DeleteUserAsync(Guid userId)
+        public Task<bool> DeleteUserAsync(Guid userId)
         {
-            throw new NotImplementedException();
+            var user = _context.Users.FirstOrDefault(u => u.UserId == userId && u.DateDelete == null);
+            if (user != null)
+            {
+                user.DateDelete = DateTime.UtcNow;
+                _context.Users.Update(user);
+                _context.SaveChanges();
+            }
+
+            return Task.FromResult(true);
         }
 
         public Task<List<User>> GetAllUsersAsync()
@@ -78,9 +86,39 @@ namespace UserManagement.Infrastructure.Repositories
                            .FirstOrDefaultAsync(u => u.UserId == userId && u.DateDelete == null);
         }
 
-        public Task UpdateUserAsync(User user)
+        public Task<User> UpdateUserAsync(Guid id, CreateUserDto user)
         {
-            throw new NotImplementedException();
+            var existingUser = _context.Users
+                                       .Include(u => u.Permissions)
+                                       .FirstOrDefault(u => u.UserId == id && u.DateDelete == null);
+
+            if (existingUser == null)
+            {
+                return Task.FromResult<User>(null);
+            }
+
+            existingUser.FirstName = user.FirstName;
+            existingUser.LastName = user.LastName;
+            existingUser.Email = user.Email;
+            existingUser.Phone = user.Phone;
+            existingUser.RoleId = user.RoleId;
+            existingUser.Username = user.Username;
+            existingUser.Password = user.Password;
+            existingUser.DateUpdate = user.DateUpdate;
+
+            _context.UserPermissions.RemoveRange(existingUser.Permissions);
+            existingUser.Permissions = user.Permissions.Select(p => new UserPermission
+            {
+                PermissionId = p.PermissionId,
+                IsReadable = p.IsReadable,
+                IsWritable = p.IsWritable,
+                IsDeletable = p.IsDeletable
+            }).ToList();
+
+            _context.Users.Update(existingUser);
+            _context.SaveChanges();
+
+            return Task.FromResult(existingUser);
         }
 
         public async Task<Role> AddRoleAsync(string roleName)

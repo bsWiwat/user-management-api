@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using UserManagement.Application.Features.Permissions.Commands.CreatePermission;
 using UserManagement.Application.Features.Roles.Commands.CreateRole;
 using UserManagement.Application.Features.Users.Commands.CreateUser;
+using UserManagement.Application.Features.Users.Commands.DeleteUser;
+using UserManagement.Application.Features.Users.Commands.EditUser;
 using UserManagement.Application.Features.Users.Queries.GetAllUser;
 using UserManagement.Application.Features.Users.Queries.GetUserById;
 
@@ -22,6 +24,22 @@ namespace UserManagement.API.Controllers
         [HttpPost("user")]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserCommand command)
         {
+            var response = await _mediator.Send(command);
+            return Ok(response);
+        }
+
+        [HttpPut("user/{id}")]
+        public async Task<IActionResult> EditUser(Guid id, [FromBody] EditUserCommand command)
+        {
+            command.UserId = id;
+            var response = await _mediator.Send(command);
+            return Ok(response);
+        }
+
+        [HttpDelete("user/{id}")]
+        public async Task<IActionResult> DeleteUser(Guid id)
+        {
+            var command = new DeleteUserCommand { UserId = id };
             var response = await _mediator.Send(command);
             return Ok(response);
         }
