@@ -1,5 +1,7 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using UserManagement.Application.Contracts.Repository;
+using UserManagement.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +13,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(Assembly.Load("UserManagement.Application")));
 
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
