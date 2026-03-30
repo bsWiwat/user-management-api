@@ -49,9 +49,8 @@ namespace UserManagement.API.Controllers
         }
 
         [HttpGet("users")]
-        public async Task<IActionResult> GetAllUsers()
+        public async Task<IActionResult> GetAllUsers([FromQuery] GetAllUserQuery query)
         {
-            var query = new GetAllUserQuery();
             var response = await _mediator.Send(query);
             return Ok(response);
         }

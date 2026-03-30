@@ -2,6 +2,7 @@ using MediatR;
 using UserManagement.Application.Common.Responses;
 using UserManagement.Application.Contracts.Repository;
 using UserManagement.Application.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace UserManagement.Application.Features.Users.Commands.EditUser;
 
@@ -31,6 +32,14 @@ public class EditUserHandler : IRequestHandler<EditUserCommand, BaseResponse<Use
         }
 
         var now = DateTime.UtcNow;
+        var passwordHasher = new PasswordHasher<object>();
+        string? hashedPassword = null;
+
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            hashedPassword = passwordHasher.HashPassword(null, request.Password);
+        }
+
         var userUpdate = new CreateUserDto
         {
             FirstName = request.FirstName,
@@ -39,7 +48,8 @@ public class EditUserHandler : IRequestHandler<EditUserCommand, BaseResponse<Use
             Phone = request.Phone,
             RoleId = request.RoleId,
             Username = request.Username,
-            Password = request.Password,
+            Password = hashedPassword,
+
             Permissions = request.Permissions.Select(p => new CreateUserPermissionDto
             {
                 PermissionId = p.PermissionId,
@@ -69,11 +79,11 @@ public class EditUserHandler : IRequestHandler<EditUserCommand, BaseResponse<Use
                 Email = user.Email,
                 Phone = user.Phone,
                 Username = user.Username,
-                Role = new RoleDTO
+                Role = user.Role != null ? new RoleDTO
                 {
                     RoleId = user.Role.RoleId,
                     RoleName = user.Role.RoleName
-                },
+                } : null,
                 Permissions = user.Permissions.Select(p => new PermissionDTO
                 {
                     PermissionId = p.PermissionId,

@@ -7,7 +7,7 @@ namespace UserManagement.Application.Contracts.Repository
     {
         Task<User> AddUserAsync(CreateUserDto user);
         Task<User> GetUserByIdAsync(Guid userId);
-        Task<List<User>> GetAllUsersAsync();
+        Task<(List<User> Data, int Total)> GetAllUsersAsync(SearchModel searchModel);
         Task<User> UpdateUserAsync(Guid id, CreateUserDto user);
         Task<bool> DeleteUserAsync(Guid userId);
 

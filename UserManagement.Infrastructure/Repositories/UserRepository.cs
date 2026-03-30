@@ -62,14 +62,47 @@ namespace UserManagement.Infrastructure.Repositories
             return Task.FromResult(true);
         }
 
-        public Task<List<User>> GetAllUsersAsync()
+        public async Task<(List<User> Data, int Total)> GetAllUsersAsync(SearchModel searchModel)
         {
-            return _context.Users
-                           .Include(u => u.Role)
-                           .Include(u => u.Permissions)
-                               .ThenInclude(up => up.Permission)
-                           .Where(u => u.DateDelete == null)
-                           .ToListAsync();
+            var query = _context.Users
+                        .Include(u => u.Role)
+                        .Include(u => u.Permissions)
+                            .ThenInclude(up => up.Permission)
+                        .Where(u => u.DateDelete == null)
+                        .AsQueryable();
+
+            if (!string.IsNullOrEmpty(searchModel.search))
+            {
+                var keyword = searchModel.search.ToLower();
+
+                query = query.Where(u =>
+                    u.FirstName.ToLower().Contains(keyword) ||
+                    u.LastName.ToLower().Contains(keyword) ||
+                    u.Email.ToLower().Contains(keyword)
+                );
+            }
+
+            var total = await query.CountAsync();
+
+            query = searchModel.orderBy?.ToLower() switch
+            {
+                "name" => searchModel.orderDirection == "desc"
+                    ? query.OrderByDescending(u => u.FirstName)
+                    : query.OrderBy(u => u.FirstName),
+
+                "createddate" => searchModel.orderDirection == "desc"
+                    ? query.OrderByDescending(u => u.DateCreate)
+                    : query.OrderBy(u => u.DateCreate),
+
+                _ => query.OrderByDescending(u => u.DateCreate)
+            };
+
+            var data = await query
+                .Skip((searchModel.pageNumber - 1) * searchModel.pageSize)
+                .Take(searchModel.pageSize)
+                .ToListAsync();
+
+            return (data, total);
         }
 
         public Task<User> GetUserByIdAsync(Guid userId)
@@ -98,7 +131,12 @@ namespace UserManagement.Infrastructure.Repositories
             existingUser.Phone = user.Phone;
             existingUser.RoleId = user.RoleId;
             existingUser.Username = user.Username;
-            existingUser.Password = user.Password;
+
+            if (!string.IsNullOrEmpty(user.Password))
+            {
+                existingUser.Password = user.Password;
+            }
+
             existingUser.DateUpdate = user.DateUpdate;
 
             _context.UserPermissions.RemoveRange(existingUser.Permissions);

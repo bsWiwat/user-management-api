@@ -2,6 +2,7 @@ using MediatR;
 using UserManagement.Application.Common.Responses;
 using UserManagement.Application.Contracts.Repository;
 using UserManagement.Application.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace UserManagement.Application.Features.Users.Commands.CreateUser;
 
@@ -17,6 +18,7 @@ public class CreateUserHandler : IRequestHandler<CreateUserCommand, BaseResponse
     public async Task<BaseResponse<UserResponseDTO>> Handle(CreateUserCommand request, CancellationToken cancellationToken)
     {
         var now = DateTime.UtcNow;
+        var passwordHasher = new PasswordHasher<object>();
 
         var user = await _userRepository.AddUserAsync(new CreateUserDto
         {
@@ -26,7 +28,7 @@ public class CreateUserHandler : IRequestHandler<CreateUserCommand, BaseResponse
             Phone = request.Phone,
             RoleId = request.RoleId,
             Username = request.Username,
-            Password = request.Password,
+            Password = passwordHasher.HashPassword(null, request.Password),
 
             DateCreate = now,
             DateUpdate = now,
