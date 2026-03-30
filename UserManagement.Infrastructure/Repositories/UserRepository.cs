@@ -49,29 +49,109 @@ namespace UserManagement.Infrastructure.Repositories
                                 .FirstAsync(u => u.UserId == newUser.UserId);
         }
 
-        public Task DeleteUserAsync(Guid userId)
+        public Task<bool> DeleteUserAsync(Guid userId)
         {
-            throw new NotImplementedException();
+            var user = _context.Users.FirstOrDefault(u => u.UserId == userId && u.DateDelete == null);
+            if (user != null)
+            {
+                user.DateDelete = DateTime.UtcNow;
+                _context.Users.Update(user);
+                _context.SaveChanges();
+            }
+
+            return Task.FromResult(true);
         }
 
-        public Task<IEnumerable<User>> GetAllUsersAsync()
+        public async Task<(List<User> Data, int Total)> GetAllUsersAsync(SearchModel searchModel)
         {
-            throw new NotImplementedException();
-        }
+            var query = _context.Users
+                        .Include(u => u.Role)
+                        .Include(u => u.Permissions)
+                            .ThenInclude(up => up.Permission)
+                        .Where(u => u.DateDelete == null)
+                        .AsQueryable();
 
-        public Task<Role> GetRoleByIdAsync(Guid roleId)
-        {
-            throw new NotImplementedException();
+            if (!string.IsNullOrEmpty(searchModel.search))
+            {
+                var keyword = searchModel.search.ToLower();
+
+                query = query.Where(u =>
+                    u.FirstName.ToLower().Contains(keyword) ||
+                    u.LastName.ToLower().Contains(keyword) ||
+                    u.Email.ToLower().Contains(keyword)
+                );
+            }
+
+            var total = await query.CountAsync();
+
+            query = searchModel.orderBy?.ToLower() switch
+            {
+                "name" => searchModel.orderDirection == "desc"
+                    ? query.OrderByDescending(u => u.FirstName)
+                    : query.OrderBy(u => u.FirstName),
+
+                "createddate" => searchModel.orderDirection == "desc"
+                    ? query.OrderByDescending(u => u.DateCreate)
+                    : query.OrderBy(u => u.DateCreate),
+
+                _ => query.OrderByDescending(u => u.DateCreate)
+            };
+
+            var data = await query
+                .Skip((searchModel.pageNumber - 1) * searchModel.pageSize)
+                .Take(searchModel.pageSize)
+                .ToListAsync();
+
+            return (data, total);
         }
 
         public Task<User> GetUserByIdAsync(Guid userId)
         {
-            throw new NotImplementedException();
+            return _context.Users
+                           .Include(u => u.Role)
+                           .Include(u => u.Permissions)
+                               .ThenInclude(up => up.Permission)
+                           .FirstOrDefaultAsync(u => u.UserId == userId && u.DateDelete == null);
         }
 
-        public Task UpdateUserAsync(User user)
+        public Task<User> UpdateUserAsync(Guid id, CreateUserDto user)
         {
-            throw new NotImplementedException();
+            var existingUser = _context.Users
+                                       .Include(u => u.Permissions)
+                                       .FirstOrDefault(u => u.UserId == id && u.DateDelete == null);
+
+            if (existingUser == null)
+            {
+                return Task.FromResult<User>(null);
+            }
+
+            existingUser.FirstName = user.FirstName;
+            existingUser.LastName = user.LastName;
+            existingUser.Email = user.Email;
+            existingUser.Phone = user.Phone;
+            existingUser.RoleId = user.RoleId;
+            existingUser.Username = user.Username;
+
+            if (!string.IsNullOrEmpty(user.Password))
+            {
+                existingUser.Password = user.Password;
+            }
+
+            existingUser.DateUpdate = user.DateUpdate;
+
+            _context.UserPermissions.RemoveRange(existingUser.Permissions);
+            existingUser.Permissions = user.Permissions.Select(p => new UserPermission
+            {
+                PermissionId = p.PermissionId,
+                IsReadable = p.IsReadable,
+                IsWritable = p.IsWritable,
+                IsDeletable = p.IsDeletable
+            }).ToList();
+
+            _context.Users.Update(existingUser);
+            _context.SaveChanges();
+
+            return Task.FromResult(existingUser);
         }
 
         public async Task<Role> AddRoleAsync(string roleName)
@@ -95,9 +175,14 @@ namespace UserManagement.Infrastructure.Repositories
             return newRole;
         }
 
-        public Task<IEnumerable<Role>> GetAllRolesAsync()
+        public Task<List<Role>> GetAllRolesAsync()
         {
-            throw new NotImplementedException();
+            return _context.Roles.ToListAsync();
+        }
+
+        public Task<Role> GetRoleByIdAsync(Guid roleId)
+        {
+            return _context.Roles.FirstOrDefaultAsync(r => r.RoleId == roleId);
         }
 
         public Task UpdateRoleAsync(Role role)
@@ -132,12 +217,12 @@ namespace UserManagement.Infrastructure.Repositories
 
         public Task<Permission> GetPermissionByIdAsync(Guid permissionId)
         {
-            throw new NotImplementedException();
+            return _context.Permissions.FirstOrDefaultAsync(p => p.PermissionId == permissionId);
         }
 
-        public Task<IEnumerable<Permission>> GetAllPermissionsAsync()
+        public Task<List<Permission>> GetAllPermissionsAsync()
         {
-            throw new NotImplementedException();
+            return _context.Permissions.ToListAsync();
         }
 
         public Task UpdatePermissionAsync(Permission permission)
